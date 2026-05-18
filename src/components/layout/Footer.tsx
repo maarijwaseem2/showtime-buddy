@@ -1,39 +1,59 @@
+import { Link } from "react-router-dom";
 import { Film } from "lucide-react";
 
 const Footer = () => (
-  <footer className="border-t border-border/60 mt-20">
-    <div className="container py-10 grid gap-6 md:grid-cols-3 text-sm text-muted-foreground">
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-primary">
+  <footer className="border-t border-border/60 mt-12 sm:mt-20 pb-[env(safe-area-inset-bottom)]">
+    <section className="container py-8 sm:py-10 grid gap-8 sm:grid-cols-2 md:grid-cols-3 text-sm text-muted-foreground">
+      <section>
+        <Link to="/" className="flex items-center gap-2 mb-3 w-fit">
+          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-gradient-primary">
             <Film className="h-4 w-4 text-primary-foreground" />
-          </div>
+          </span>
           <span className="text-lg font-bold text-foreground">
             Cine<span className="text-gradient-primary">Slot</span>
           </span>
-        </div>
-        <p>Book the best seats at your favorite cinemas in seconds.</p>
-      </div>
-      <div>
+        </Link>
+        <p className="max-w-xs">Book the best seats at your favorite cinemas in seconds.</p>
+      </section>
+      <section>
         <p className="text-foreground font-semibold mb-2">Explore</p>
-        <ul className="space-y-1.5">
-          <li>Now Showing</li>
-          <li>Upcoming</li>
-          <li>Cinemas</li>
+        <ul className="space-y-2 list-none p-0 m-0">
+          <li>
+            <Link to="/" className="hover:text-foreground transition-smooth">
+              Now Showing
+            </Link>
+          </li>
+          <li>
+            <Link to="/" className="hover:text-foreground transition-smooth">
+              Upcoming
+            </Link>
+          </li>
+          <li>
+            <Link to="/bookings" className="hover:text-foreground transition-smooth">
+              My Bookings
+            </Link>
+          </li>
         </ul>
-      </div>
-      <div>
-        <p className="text-foreground font-semibold mb-2">Support</p>
-        <ul className="space-y-1.5">
-          <li>Help Center</li>
-          <li>Refund Policy</li>
-          <li>Contact</li>
+      </section>
+      <section className="sm:col-span-2 md:col-span-1">
+        <p className="text-foreground font-semibold mb-2">Account</p>
+        <ul className="space-y-2 list-none p-0 m-0">
+          <li>
+            <Link to="/login" className="hover:text-foreground transition-smooth">
+              Sign in
+            </Link>
+          </li>
+          <li>
+            <Link to="/signup" className="hover:text-foreground transition-smooth">
+              Create account
+            </Link>
+          </li>
         </ul>
-      </div>
-    </div>
-    <div className="border-t border-border/60 py-4 text-center text-xs text-muted-foreground">
+      </section>
+    </section>
+    <p className="border-t border-border/60 py-4 text-center text-xs text-muted-foreground container">
       © 2026 CineSlot. All rights reserved.
-    </div>
+    </p>
   </footer>
 );
 

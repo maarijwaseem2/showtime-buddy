@@ -3,9 +3,9 @@ import Header from "./Header";
 import Footer from "./Footer";
 
 const Layout = () => (
-  <div className="min-h-screen flex flex-col bg-background">
+  <div className="min-h-screen min-h-[100dvh] flex flex-col bg-background">
     <Header />
-    <main className="flex-1">
+    <main className="flex-1 w-full min-w-0">
       <Outlet />
     </main>
     <Footer />

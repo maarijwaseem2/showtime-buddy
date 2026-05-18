@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="CineSlot">
+  <defs>
+    <linearGradient id="cs" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e01e37"/>
+      <stop offset="100%" stop-color="#ff6347"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#0c0c0c"/>
+  <rect x="72" y="72" width="368" height="368" rx="88" fill="url(#cs)"/>
+  <g fill="#fff" fill-opacity="0.95">
+    <rect x="128" y="144" width="56" height="224" rx="12"/>
+    <rect x="328" y="144" width="56" height="224" rx="12"/>
+    <path d="M216 168v176l152-88z"/>
+  </g>
+  <circle cx="256" cy="400" r="28" fill="#0c0c0c" fill-opacity="0.35"/>
+  <rect x="220" y="388" width="72" height="24" rx="6" fill="#ffd166"/>
+</svg>

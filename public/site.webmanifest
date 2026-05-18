@@ -1,0 +1,17 @@
+{
+  "name": "CineSlot",
+  "short_name": "CineSlot",
+  "description": "Book movie tickets and seats online",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0c0c0c",
+  "theme_color": "#0c0c0c",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

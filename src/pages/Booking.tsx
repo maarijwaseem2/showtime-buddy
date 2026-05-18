@@ -1,36 +1,54 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { ChevronLeft, MapPin, Clock, Calendar as CalendarIcon } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { ChevronLeft, MapPin, Clock, Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { movies } from "@/data/movies";
-import { useBookingStore, seatsForBooking } from "@/store/booking";
+import { showtimesApi, bookingsApi, ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import NotFound from "./NotFound";
 import { cn } from "@/lib/utils";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 
 const ROWS = ["A", "B", "C", "D", "E", "F", "G", "H"];
 const COLS = Array.from({ length: 10 }, (_, i) => i + 1);
-const VIP_ROWS = new Set(["A", "B"]);
 
-const Booking = () => {
+const BookingContent = () => {
   const { movieId, slotId } = useParams();
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const dateISO = params.get("date") || format(new Date(), "yyyy-MM-dd");
-  const addBooking = useBookingStore((s) => s.addBooking);
 
-  const movie = movies.find((m) => m.id === movieId);
-  const slot = movie?.slots.find((s) => s.id === slotId);
-
-  const bookedSet = useMemo(
-    () => (movie && slot ? seatsForBooking(movie, slot, dateISO) : new Set<string>()),
-    [movie, slot, dateISO]
-  );
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["seats", slotId],
+    queryFn: () => showtimesApi.seats(slotId!),
+    enabled: !!slotId,
+  });
 
   const [selected, setSelected] = useState<string[]>([]);
 
-  if (!movie || !slot) return <NotFound />;
+  const bookMutation = useMutation({
+    mutationFn: () => bookingsApi.create(slotId!, selected),
+    onSuccess: (booking) => {
+      navigate(`/confirmation/${booking.id}`);
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiError ? err.message : "Booking failed");
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <p className="container py-20 flex justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </p>
+    );
+  }
+
+  if (isError || !data || data.movie.id !== movieId) return <NotFound />;
+
+  const bookedSet = new Set(data.bookedSeats);
+  const vipRows = new Set(data.vipRows?.length ? data.vipRows : ["A", "B"]);
 
   const toggle = (id: string) => {
     if (bookedSet.has(id)) return;
@@ -39,8 +57,8 @@ const Booking = () => {
     );
   };
 
-  const priceFor = (id: string) =>
-    VIP_ROWS.has(id[0]) ? slot.priceVip : slot.priceStandard;
+  const priceFor = (seatId: string) =>
+    vipRows.has(seatId[0]) ? data.priceVip : data.priceStandard;
   const total = selected.reduce((sum, id) => sum + priceFor(id), 0);
 
   const confirm = () => {
@@ -48,57 +66,46 @@ const Booking = () => {
       toast.error("Please select at least one seat");
       return;
     }
-    const booking = addBooking({
-      movieId: movie.id,
-      movieTitle: movie.title,
-      poster: movie.poster,
-      cinema: slot.cinema,
-      screen: slot.screen,
-      date: dateISO,
-      time: slot.time,
-      seats: selected,
-      total,
-    });
-    navigate(`/confirmation/${booking.id}`);
+    bookMutation.mutate();
   };
 
   return (
-    <div className="container py-8">
+    <section className="container py-6 sm:py-8">
       <Link
-        to={`/movies/${movie.id}`}
+        to={`/movies/${movieId}`}
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-smooth"
       >
-        <ChevronLeft className="h-4 w-4" /> Back to {movie.title}
+        <ChevronLeft className="h-4 w-4" /> Back to {data.movie.title}
       </Link>
 
-      <div className="mt-6 grid lg:grid-cols-[1fr_360px] gap-8">
-        {/* Seat layout */}
-        <div className="rounded-2xl border border-border/60 bg-gradient-card p-6 md:p-10 shadow-card-elegant">
-          <div className="mb-8">
-            <div className="mx-auto h-2 w-3/4 rounded-full bg-gradient-primary opacity-80 shadow-glow" />
+      <section className="mt-6 grid lg:grid-cols-[1fr_minmax(280px,360px)] gap-6 lg:gap-8">
+        <article className="rounded-2xl border border-border/60 bg-gradient-card p-3 sm:p-6 md:p-10 shadow-card-elegant overflow-x-auto -mx-1 sm:mx-0">
+          <header className="mb-6 sm:mb-8">
+            <span className="mx-auto block h-2 w-3/4 max-w-md rounded-full bg-gradient-primary opacity-80 shadow-glow" />
             <p className="mt-3 text-center text-xs uppercase tracking-[0.3em] text-muted-foreground">
               Screen
             </p>
-          </div>
+          </header>
 
-          <div className="flex flex-col items-center gap-2.5">
+          <section className="flex flex-col items-center gap-2 min-w-[320px] sm:min-w-0">
             {ROWS.map((row) => (
-              <div key={row} className="flex items-center gap-2">
-                <span className="w-5 text-xs font-semibold text-muted-foreground">{row}</span>
-                <div className="flex gap-1.5">
+              <p key={row} className="flex items-center gap-1.5 sm:gap-2 m-0">
+                <span className="w-4 sm:w-5 text-xs font-semibold text-muted-foreground">{row}</span>
+                <span className="flex gap-0.5 sm:gap-1.5">
                   {COLS.map((col) => {
                     const id = `${row}${col}`;
                     const isBooked = bookedSet.has(id);
                     const isSelected = selected.includes(id);
-                    const isVip = VIP_ROWS.has(row);
+                    const isVip = vipRows.has(row);
                     return (
                       <button
                         key={id}
+                        type="button"
                         onClick={() => toggle(id)}
                         disabled={isBooked}
                         aria-label={`Seat ${id}${isBooked ? " (booked)" : ""}`}
                         className={cn(
-                          "h-7 w-7 md:h-8 md:w-8 rounded-md text-[10px] font-semibold transition-smooth",
+                          "h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 rounded-md text-[9px] sm:text-[10px] font-semibold transition-smooth",
                           isBooked && "bg-seat-booked text-muted-foreground/40 cursor-not-allowed",
                           !isBooked && !isSelected && !isVip && "bg-seat-available hover:bg-muted text-muted-foreground hover:text-foreground",
                           !isBooked && !isSelected && isVip && "bg-seat-vip/30 hover:bg-seat-vip/60 text-gold border border-seat-vip/40",
@@ -109,13 +116,12 @@ const Booking = () => {
                       </button>
                     );
                   })}
-                </div>
-              </div>
+                </span>
+              </p>
             ))}
-          </div>
+          </section>
 
-          {/* Legend */}
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-5 text-xs text-muted-foreground">
+          <footer className="mt-8 sm:mt-10 flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-2">
               <span className="h-4 w-4 rounded bg-seat-available" /> Available
             </span>
@@ -128,32 +134,31 @@ const Booking = () => {
             <span className="inline-flex items-center gap-2">
               <span className="h-4 w-4 rounded bg-seat-booked" /> Booked
             </span>
-          </div>
-        </div>
+          </footer>
+        </article>
 
-        {/* Summary */}
-        <aside className="rounded-2xl border border-border/60 bg-card p-6 h-fit lg:sticky lg:top-24 shadow-card-elegant">
-          <h2 className="text-xl font-bold">{movie.title}</h2>
-          <div className="mt-3 space-y-2 text-sm text-muted-foreground">
-            <p className="inline-flex items-center gap-2">
-              <MapPin className="h-4 w-4" /> {slot.cinema} · {slot.screen}
-            </p>
-            <p className="inline-flex items-center gap-2">
-              <CalendarIcon className="h-4 w-4" /> {format(parseISO(dateISO), "EEE, d MMM yyyy")}
-            </p>
-            <p className="inline-flex items-center gap-2">
-              <Clock className="h-4 w-4" /> {slot.time}
-            </p>
-          </div>
+        <aside className="rounded-2xl border border-border/60 bg-card p-5 sm:p-6 h-fit lg:sticky lg:top-24 shadow-card-elegant">
+          <h2 className="text-lg sm:text-xl font-bold">{data.movie.title}</h2>
+          <ul className="mt-3 space-y-2 text-sm text-muted-foreground list-none p-0">
+            <li className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 shrink-0" /> {data.cinema} · {data.screen}
+            </li>
+            <li className="flex items-center gap-2">
+              <CalendarIcon className="h-4 w-4 shrink-0" /> {format(parseISO(dateISO), "EEE, d MMM yyyy")}
+            </li>
+            <li className="flex items-center gap-2">
+              <Clock className="h-4 w-4 shrink-0" /> {data.time}
+            </li>
+          </ul>
 
-          <div className="mt-5 border-t border-border/60 pt-5">
+          <section className="mt-5 border-t border-border/60 pt-5">
             <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
               Selected Seats
             </p>
             {selected.length === 0 ? (
               <p className="text-sm text-muted-foreground">No seats selected yet</p>
             ) : (
-              <div className="flex flex-wrap gap-1.5">
+              <p className="flex flex-wrap gap-1.5">
                 {selected.map((s) => (
                   <span
                     key={s}
@@ -162,40 +167,30 @@ const Booking = () => {
                     {s}
                   </span>
                 ))}
-              </div>
+              </p>
             )}
-          </div>
+          </section>
 
-          <div className="mt-5 space-y-2 text-sm">
-            <div className="flex justify-between text-muted-foreground">
-              <span>Standard ({selected.filter((s) => !VIP_ROWS.has(s[0])).length}× Rs {slot.priceStandard})</span>
-              <span>Rs {selected.filter((s) => !VIP_ROWS.has(s[0])).length * slot.priceStandard}</span>
-            </div>
-            <div className="flex justify-between text-muted-foreground">
-              <span>VIP ({selected.filter((s) => VIP_ROWS.has(s[0])).length}× Rs {slot.priceVip})</span>
-              <span>Rs {selected.filter((s) => VIP_ROWS.has(s[0])).length * slot.priceVip}</span>
-            </div>
-          </div>
-
-          <div className="mt-4 border-t border-border/60 pt-4 flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Total</span>
-            <span className="text-2xl font-extrabold text-gradient-primary">Rs {total}</span>
-          </div>
+          <p className="mt-5 text-2xl font-extrabold text-gradient-primary">Rs {total}</p>
 
           <Button
             onClick={confirm}
             size="lg"
             className="mt-5 w-full bg-gradient-primary shadow-glow hover:opacity-90"
+            disabled={bookMutation.isPending}
           >
-            Confirm Booking
+            {bookMutation.isPending ? "Confirming..." : "Confirm Booking"}
           </Button>
-          <p className="mt-3 text-[11px] text-center text-muted-foreground">
-            Demo mode — no payment required
-          </p>
         </aside>
-      </div>
-    </div>
+      </section>
+    </section>
   );
 };
+
+const Booking = () => (
+  <ProtectedRoute>
+    <BookingContent />
+  </ProtectedRoute>
+);
 
 export default Booking;

@@ -1,11 +1,40 @@
 import { useState } from "react";
-import { Shield, Lock, Film, Ticket, DollarSign, TrendingUp, Calendar, MapPin } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Film,
+  Ticket,
+  DollarSign,
+  TrendingUp,
+  Calendar,
+  MapPin,
+  Loader2,
+  Plus,
+  Pencil,
+  Trash2,
+  Clock,
+  LayoutDashboard,
+  Clapperboard,
+} from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { useBookingStore } from "@/store/booking";
-import { movies } from "@/data/movies";
+import { adminApi, ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useAuthStore } from "@/store/auth";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import MovieFormDialog from "@/components/admin/MovieFormDialog";
+import ShowtimeManagerDialog from "@/components/admin/ShowtimeManagerDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Movie } from "@/types";
 import { toast } from "sonner";
 
 const Stat = ({
@@ -16,197 +45,359 @@ const Stat = ({
 }: {
   label: string;
   value: string | number;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   accent?: "primary" | "gold" | "success";
 }) => (
-  <div className="rounded-xl border border-border/60 bg-gradient-card p-5">
-    <div className="flex items-center justify-between">
+  <article className="rounded-xl border border-border/60 bg-gradient-card p-4 sm:p-5">
+    <header className="flex items-center justify-between">
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
-      <div
+      <span
         className={`h-9 w-9 rounded-lg flex items-center justify-center ${
           accent === "gold"
             ? "bg-gold/15 text-gold"
             : accent === "success"
-            ? "bg-success/15 text-success"
-            : "bg-primary/15 text-primary"
+              ? "bg-success/15 text-success"
+              : "bg-primary/15 text-primary"
         }`}
       >
         <Icon className="h-4 w-4" />
-      </div>
-    </div>
-    <p className="mt-3 text-3xl font-extrabold">{value}</p>
-  </div>
+      </span>
+    </header>
+    <p className="mt-3 text-2xl sm:text-3xl font-extrabold">{value}</p>
+  </article>
 );
 
-const Admin = () => {
-  const isAdmin = useBookingStore((s) => s.isAdmin);
-  const setAdmin = useBookingStore((s) => s.setAdmin);
-  const bookings = useBookingStore((s) => s.bookings);
-  const [pwd, setPwd] = useState("");
+const AdminDashboard = () => {
+  const queryClient = useQueryClient();
+  const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
 
-  if (!isAdmin) {
-    return (
-      <div className="container py-20 max-w-md">
-        <div className="rounded-2xl border border-border/60 bg-gradient-card p-8 shadow-card-elegant text-center">
-          <div className="mx-auto h-14 w-14 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center mb-4">
-            <Lock className="h-6 w-6 text-primary" />
-          </div>
-          <h1 className="text-2xl font-bold">Admin Access</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Demo password: <span className="font-mono font-bold text-foreground">admin123</span>
-          </p>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (pwd === "admin123") {
-                setAdmin(true);
-                toast.success("Welcome, admin");
-              } else {
-                toast.error("Incorrect password");
-              }
-            }}
-            className="mt-6 text-left space-y-3"
-          >
-            <div>
-              <Label htmlFor="pwd">Password</Label>
-              <Input
-                id="pwd"
-                type="password"
-                value={pwd}
-                onChange={(e) => setPwd(e.target.value)}
-                placeholder="Enter admin password"
-                className="mt-1 bg-secondary border-border/60"
-              />
-            </div>
-            <Button type="submit" className="w-full bg-gradient-primary shadow-glow">
-              <Shield className="h-4 w-4" /> Sign in as Admin
-            </Button>
-          </form>
-        </div>
-      </div>
-    );
-  }
+  const [movieDialogOpen, setMovieDialogOpen] = useState(false);
+  const [editingMovie, setEditingMovie] = useState<Movie | null>(null);
+  const [showtimeMovie, setShowtimeMovie] = useState<Movie | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Movie | null>(null);
 
-  const confirmed = bookings.filter((b) => b.status === "confirmed");
-  const revenue = confirmed.reduce((s, b) => s + b.total, 0);
-  const totalSeats = confirmed.reduce((s, b) => s + b.seats.length, 0);
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ["admin", "stats"],
+    queryFn: () => adminApi.stats(),
+  });
 
-  // popularity
-  const counts: Record<string, number> = {};
-  confirmed.forEach((b) => (counts[b.movieTitle] = (counts[b.movieTitle] || 0) + b.seats.length));
-  const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const { data: bookings = [], isLoading: bookingsLoading } = useQuery({
+    queryKey: ["admin", "bookings"],
+    queryFn: () => adminApi.bookings(),
+  });
+
+  const { data: movies = [], isLoading: moviesLoading } = useQuery({
+    queryKey: ["admin", "movies"],
+    queryFn: () => adminApi.movies(),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (slug: string) => adminApi.deleteMovie(slug),
+    onSuccess: () => {
+      toast.success("Movie deleted");
+      queryClient.invalidateQueries({ queryKey: ["admin", "movies"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
+      queryClient.invalidateQueries({ queryKey: ["movies"] });
+      setDeleteTarget(null);
+    },
+    onError: (err) => {
+      toast.error(err instanceof ApiError ? err.message : "Delete failed");
+    },
+  });
+
+  const refreshAll = () => {
+    queryClient.invalidateQueries({ queryKey: ["admin"] });
+    queryClient.invalidateQueries({ queryKey: ["movies"] });
+  };
+
+  const openAdd = () => {
+    setEditingMovie(null);
+    setMovieDialogOpen(true);
+  };
+
+  const openEdit = (m: Movie) => {
+    setEditingMovie(m);
+    setMovieDialogOpen(true);
+  };
 
   return (
-    <div className="container py-10">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold">Admin Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Manage movies, slots and bookings.</p>
-        </div>
-        <Button variant="outline" onClick={() => { setAdmin(false); toast("Signed out"); }}>
-          Sign out
-        </Button>
-      </div>
+    <section className="container py-6 sm:py-10">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <section>
+          <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
+            Admin portal
+          </p>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold">Dashboard</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            {user?.fullName} · {user?.email}
+          </p>
+        </section>
+        <nav className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/">
+              <Clapperboard className="h-4 w-4" /> View site
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => logout()}>
+            Sign out
+          </Button>
+        </nav>
+      </header>
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Total Bookings" value={bookings.length} icon={Ticket} accent="primary" />
-        <Stat label="Seats Sold" value={totalSeats} icon={TrendingUp} accent="success" />
-        <Stat label="Revenue" value={`Rs ${revenue.toLocaleString()}`} icon={DollarSign} accent="gold" />
-        <Stat label="Active Movies" value={movies.length} icon={Film} accent="primary" />
-      </div>
+      <Tabs defaultValue="overview" className="mt-8">
+        <TabsList className="w-full flex flex-wrap h-auto gap-1 bg-secondary/80 p-1 overflow-x-auto">
+          <TabsTrigger value="overview" className="flex-1 sm:flex-none gap-1.5">
+            <LayoutDashboard className="h-4 w-4" /> Overview
+          </TabsTrigger>
+          <TabsTrigger value="movies" className="flex-1 sm:flex-none gap-1.5">
+            <Film className="h-4 w-4" /> Movies
+          </TabsTrigger>
+          <TabsTrigger value="bookings" className="flex-1 sm:flex-none gap-1.5">
+            <Ticket className="h-4 w-4" /> Bookings
+          </TabsTrigger>
+        </TabsList>
 
-      <div className="mt-10 grid gap-6 lg:grid-cols-3">
-        {/* Recent bookings */}
-        <div className="lg:col-span-2 rounded-2xl border border-border/60 bg-card p-6">
-          <h2 className="text-lg font-bold">Recent Bookings</h2>
-          {bookings.length === 0 ? (
-            <p className="mt-6 text-sm text-muted-foreground">No bookings yet.</p>
+        <TabsContent value="overview" className="mt-6">
+          {statsLoading ? (
+            <Loader2 className="h-6 w-6 animate-spin mx-auto mt-12" />
           ) : (
-            <div className="mt-4 divide-y divide-border/60">
-              {bookings.slice(0, 8).map((b) => (
-                <div key={b.id} className="py-3 flex items-center gap-3">
-                  <img src={b.poster} alt="" className="h-12 w-9 rounded object-cover" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold truncate">{b.movieTitle}</p>
-                    <p className="text-xs text-muted-foreground inline-flex items-center gap-3">
-                      <span className="inline-flex items-center gap-1">
-                        <Calendar className="h-3 w-3" /> {format(parseISO(b.date), "d MMM")}
-                      </span>
-                      <span>{b.time}</span>
-                      <span className="inline-flex items-center gap-1">
-                        <MapPin className="h-3 w-3" /> {b.cinema}
-                      </span>
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold">Rs {b.total}</p>
-                    <p className="text-[10px] uppercase font-semibold text-muted-foreground">
-                      {b.seats.length} seat{b.seats.length > 1 ? "s" : ""}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <>
+              <section className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+                <Stat label="Total Bookings" value={stats?.totalBookings ?? 0} icon={Ticket} accent="primary" />
+                <Stat label="Seats Sold" value={stats?.seatsSold ?? 0} icon={TrendingUp} accent="success" />
+                <Stat label="Revenue" value={`Rs ${(stats?.revenue ?? 0).toLocaleString()}`} icon={DollarSign} accent="gold" />
+                <Stat label="Movies" value={movies.length} icon={Film} accent="primary" />
+              </section>
+
+              <section className="mt-8 grid gap-6 lg:grid-cols-2">
+                <article className="rounded-2xl border border-border/60 bg-card p-4 sm:p-6">
+                  <h2 className="text-lg font-bold">Most booked movies</h2>
+                  {(stats?.topMovies ?? []).length === 0 ? (
+                    <p className="mt-4 text-sm text-muted-foreground">No bookings yet.</p>
+                  ) : (
+                    <ul className="mt-4 space-y-3 list-none p-0">
+                      {stats!.topMovies.map((item, i) => (
+                        <li key={item.title}>
+                          <p className="flex justify-between text-sm gap-2">
+                            <span className="font-medium truncate">
+                              #{i + 1} {item.title}
+                            </span>
+                            <span className="text-muted-foreground shrink-0">{item.seats} seats</span>
+                          </p>
+                          <span className="mt-1 block h-1.5 bg-secondary rounded-full overflow-hidden">
+                            <span
+                              className="block h-full bg-gradient-primary"
+                              style={{
+                                width: `${stats!.topMovies[0].seats ? (item.seats / stats!.topMovies[0].seats) * 100 : 0}%`,
+                              }}
+                            />
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </article>
+
+                <article className="rounded-2xl border border-border/60 bg-card p-4 sm:p-6">
+                  <h2 className="text-lg font-bold">Recent bookings</h2>
+                  {bookingsLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin mt-6 mx-auto" />
+                  ) : bookings.length === 0 ? (
+                    <p className="mt-4 text-sm text-muted-foreground">No bookings yet.</p>
+                  ) : (
+                    <ul className="mt-4 divide-y divide-border/60 list-none p-0 max-h-64 overflow-y-auto">
+                      {bookings.slice(0, 6).map((b) => (
+                        <li key={b.id} className="py-3 flex gap-3">
+                          {b.poster && (
+                            <img src={b.poster} alt="" className="h-10 w-8 rounded object-cover shrink-0" />
+                          )}
+                          <span className="min-w-0 flex-1">
+                            <span className="font-semibold text-sm block truncate">{b.movieTitle}</span>
+                            <span className="text-xs text-muted-foreground">
+                              Rs {b.total} · {b.seats.length} seats
+                            </span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </article>
+              </section>
+            </>
           )}
-        </div>
+        </TabsContent>
 
-        {/* Top movies */}
-        <div className="rounded-2xl border border-border/60 bg-card p-6">
-          <h2 className="text-lg font-bold">Most Booked</h2>
-          {top.length === 0 ? (
-            <p className="mt-6 text-sm text-muted-foreground">No data yet.</p>
+        <TabsContent value="movies" className="mt-6">
+          <header className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <h2 className="text-lg font-bold">Manage movies</h2>
+            <Button className="bg-gradient-primary shadow-glow" onClick={openAdd}>
+              <Plus className="h-4 w-4" /> Add movie
+            </Button>
+          </header>
+
+          {moviesLoading ? (
+            <Loader2 className="h-6 w-6 animate-spin mx-auto mt-8" />
+          ) : movies.length === 0 ? (
+            <p className="text-center py-12 text-muted-foreground">No movies. Add your first movie.</p>
           ) : (
-            <ul className="mt-4 space-y-3">
-              {top.map(([title, count], i) => (
-                <li key={title}>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium truncate">
-                      <span className="text-muted-foreground mr-2">#{i + 1}</span>
-                      {title}
-                    </span>
-                    <span className="text-xs text-muted-foreground">{count} seats</span>
-                  </div>
-                  <div className="mt-1 h-1.5 bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-primary"
-                      style={{ width: `${(count / top[0][1]) * 100}%` }}
-                    />
-                  </div>
+            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 list-none p-0">
+              {movies.map((m) => (
+                <li
+                  key={m.id}
+                  className="rounded-xl border border-border/60 bg-gradient-card p-3 flex flex-col"
+                >
+                  <section className="flex gap-3">
+                    {m.poster ? (
+                      <img src={m.poster} alt="" className="h-24 w-16 rounded object-cover shrink-0" />
+                    ) : (
+                      <span className="h-24 w-16 rounded bg-secondary shrink-0 flex items-center justify-center text-xs text-muted-foreground">
+                        No img
+                      </span>
+                    )}
+                    <section className="min-w-0 flex-1">
+                      <p className="font-bold truncate">{m.title}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{m.genre.join(", ")}</p>
+                      <p className="mt-1 text-xs">
+                        <span
+                          className={
+                            m.status === "now-showing" ? "text-success font-semibold" : "text-gold font-semibold"
+                          }
+                        >
+                          {m.status}
+                        </span>
+                        {" · "}
+                        {m.duration}
+                      </p>
+                    </section>
+                  </section>
+                  <nav className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-border/60">
+                    <Button size="sm" variant="outline" className="h-8 flex-1" onClick={() => openEdit(m)}>
+                      <Pencil className="h-3 w-3" /> Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 flex-1"
+                      onClick={() => setShowtimeMovie(m)}
+                    >
+                      <Clock className="h-3 w-3" /> Slots
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 text-destructive hover:text-destructive"
+                      onClick={() => setDeleteTarget(m)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </nav>
                 </li>
               ))}
             </ul>
           )}
-        </div>
-      </div>
+        </TabsContent>
 
-      {/* Movies list */}
-      <div className="mt-10 rounded-2xl border border-border/60 bg-card p-6">
-        <h2 className="text-lg font-bold">Movies</h2>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {movies.map((m) => (
-            <div key={m.id} className="flex gap-3 rounded-xl border border-border/60 bg-gradient-card p-3">
-              <img src={m.poster} alt="" className="h-20 w-14 rounded object-cover" />
-              <div className="min-w-0">
-                <p className="font-semibold truncate">{m.title}</p>
-                <p className="text-xs text-muted-foreground">{m.genre.join(", ")} · {m.duration}</p>
-                <p className="mt-1 text-xs">
-                  <span className="text-muted-foreground">Slots: </span>
-                  <span className="font-semibold">{m.slots.length}</span>
-                  <span className="text-muted-foreground"> · Status: </span>
-                  <span className={m.status === "now-showing" ? "text-success" : "text-gold"}>
-                    {m.status}
-                  </span>
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-        <p className="mt-4 text-xs text-muted-foreground">
-          Demo mode — add/edit/delete movies will be wired up when backend is connected.
-        </p>
-      </div>
-    </div>
+        <TabsContent value="bookings" className="mt-6">
+          <h2 className="text-lg font-bold mb-4">All bookings</h2>
+          {bookingsLoading ? (
+            <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+          ) : bookings.length === 0 ? (
+            <p className="text-muted-foreground py-12 text-center">No bookings yet.</p>
+          ) : (
+            <section className="rounded-2xl border border-border/60 overflow-hidden overflow-x-auto">
+              <table className="w-full text-sm min-w-[640px]">
+                <thead className="bg-secondary/80 text-left">
+                  <tr>
+                    <th className="p-3 font-semibold">Movie</th>
+                    <th className="p-3 font-semibold">Customer</th>
+                    <th className="p-3 font-semibold">When</th>
+                    <th className="p-3 font-semibold">Cinema</th>
+                    <th className="p-3 font-semibold">Seats</th>
+                    <th className="p-3 font-semibold text-right">Total</th>
+                    <th className="p-3 font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bookings.map((b) => (
+                    <tr key={b.id} className="border-t border-border/60">
+                      <td className="p-3 font-medium">{b.movieTitle}</td>
+                      <td className="p-3 text-muted-foreground">
+                        <span className="block text-foreground">{b.userName ?? "—"}</span>
+                        <span className="text-xs">{b.userEmail ?? ""}</span>
+                      </td>
+                      <td className="p-3 whitespace-nowrap">
+                        {format(parseISO(b.date), "d MMM yyyy")}
+                        <br />
+                        <span className="text-muted-foreground">{b.time}</span>
+                      </td>
+                      <td className="p-3 text-muted-foreground">
+                        {b.cinema}
+                        <br />
+                        <span className="text-xs">{b.screen}</span>
+                      </td>
+                      <td className="p-3">{b.seats.join(", ")}</td>
+                      <td className="p-3 text-right font-bold">Rs {b.total}</td>
+                      <td className="p-3">
+                        <span
+                          className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                            b.status === "confirmed"
+                              ? "bg-success/15 text-success"
+                              : "bg-destructive/15 text-destructive"
+                          }`}
+                        >
+                          {b.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      <MovieFormDialog
+        open={movieDialogOpen}
+        onOpenChange={setMovieDialogOpen}
+        movie={editingMovie}
+        onSuccess={refreshAll}
+      />
+
+      <ShowtimeManagerDialog
+        open={!!showtimeMovie}
+        onOpenChange={(o) => !o && setShowtimeMovie(null)}
+        movie={showtimeMovie}
+      />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete movie?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove &quot;{deleteTarget?.title}&quot; and all its showtimes. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </section>
   );
 };
+
+const Admin = () => (
+  <ProtectedRoute adminOnly>
+    <AdminDashboard />
+  </ProtectedRoute>
+);
 
 export default Admin;

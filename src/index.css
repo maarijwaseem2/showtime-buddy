@@ -82,10 +82,18 @@
 
 @layer base {
   * { @apply border-border; }
-  html { @apply dark; }
+  html {
+    @apply dark;
+    -webkit-text-size-adjust: 100%;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  #root {
+    @apply min-h-screen min-h-[100dvh] flex flex-col;
   }
 }
 
