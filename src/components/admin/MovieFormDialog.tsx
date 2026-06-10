@@ -100,13 +100,23 @@ const MovieFormDialog = ({ open, onOpenChange, movie, onSuccess }: Props) => {
       const saved = isEdit
         ? await adminApi.updateMovie(movie!.id, payload)
         : await adminApi.createMovie(payload);
+
+      let posterFailed = false;
       if (posterFile) {
-        await adminApi.uploadPoster(saved.id, posterFile);
+        try {
+          await adminApi.uploadPoster(saved.id, posterFile);
+        } catch {
+          posterFailed = true;
+        }
       }
-      return saved;
+      return { saved, posterFailed };
     },
-    onSuccess: () => {
-      toast.success(isEdit ? "Movie updated" : "Movie added");
+    onSuccess: ({ posterFailed }) => {
+      if (posterFailed) {
+        toast.warning(isEdit ? "Movie updated — poster upload failed, try again" : "Movie added — poster upload failed, try again");
+      } else {
+        toast.success(isEdit ? "Movie updated" : "Movie added");
+      }
       onSuccess();
       onOpenChange(false);
     },
