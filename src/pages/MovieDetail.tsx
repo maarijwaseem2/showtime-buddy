@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { format, addDays } from "date-fns";
 import { Star, Clock, Calendar as CalendarIcon, MapPin, ChevronLeft, Loader2 } from "lucide-react";
-import { moviesApi } from "@/lib/api";
+import { moviesApi, posterSrc } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import NotFound from "./NotFound";
 
@@ -48,7 +48,7 @@ const MovieDetail = () => {
         <figure className="absolute inset-0 m-0">
           {movie.poster && (
             <img
-              src={movie.poster}
+              src={posterSrc(movie.poster)}
               alt=""
               aria-hidden
               className="h-full w-full object-cover blur-2xl opacity-30"
@@ -68,7 +68,7 @@ const MovieDetail = () => {
             {movie.poster && (
               <figure className="rounded-xl overflow-hidden shadow-card-elegant border border-border/60 max-w-[280px] mx-auto md:mx-0">
                 <img
-                  src={movie.poster}
+                  src={posterSrc(movie.poster)}
                   alt={`${movie.title} poster`}
                   width={768}
                   height={1152}

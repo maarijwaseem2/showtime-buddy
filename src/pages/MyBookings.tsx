@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Calendar, Clock, MapPin, Ticket, X, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { bookingsApi, ApiError } from "@/lib/api";
+import { bookingsApi, ApiError, posterSrc } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
@@ -56,7 +56,7 @@ const MyBookingsContent = () => {
               className="rounded-xl border border-border/60 bg-gradient-card overflow-hidden flex flex-col sm:flex-row animate-fade-in"
             >
               {b.poster && (
-                <img src={b.poster} alt={b.movieTitle} className="w-full sm:w-28 h-40 sm:h-auto object-cover" />
+                <img src={posterSrc(b.poster)} alt={b.movieTitle} className="w-full sm:w-28 h-40 sm:h-auto object-cover" />
               )}
               <section className="flex-1 p-4 min-w-0">
                 <header className="flex items-start justify-between gap-2">

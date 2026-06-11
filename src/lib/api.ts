@@ -2,6 +2,18 @@ import { useAuthStore } from "@/store/auth";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
+export const API_ORIGIN = API_URL.replace(/\/api\/?$/, "");
+
+export function posterSrc(
+  poster?: string | null
+): string | undefined {
+  if (!poster) return undefined;
+  const idx = poster.indexOf("/uploads/");
+  if (idx >= 0) return `${API_ORIGIN}${poster.slice(idx)}`;
+  if (/^https?:\/\//.test(poster)) return poster;
+  return `${API_ORIGIN}${poster.startsWith("/") ? "" : "/"}${poster}`;
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,

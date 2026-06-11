@@ -17,7 +17,7 @@ import {
   Clapperboard,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { adminApi, ApiError } from "@/lib/api";
+import { adminApi, ApiError, posterSrc } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
@@ -210,7 +210,7 @@ const AdminDashboard = () => {
                       {bookings.slice(0, 6).map((b) => (
                         <li key={b.id} className="py-3 flex gap-3">
                           {b.poster && (
-                            <img src={b.poster} alt="" className="h-10 w-8 rounded object-cover shrink-0" />
+                            <img src={posterSrc(b.poster)} alt="" className="h-10 w-8 rounded object-cover shrink-0" />
                           )}
                           <span className="min-w-0 flex-1">
                             <span className="font-semibold text-sm block truncate">{b.movieTitle}</span>
@@ -249,7 +249,7 @@ const AdminDashboard = () => {
                 >
                   <section className="flex gap-3">
                     {m.poster ? (
-                      <img src={m.poster} alt="" className="h-24 w-16 rounded object-cover shrink-0" />
+                      <img src={posterSrc(m.poster)} alt="" className="h-24 w-16 rounded object-cover shrink-0" />
                     ) : (
                       <span className="h-24 w-16 rounded bg-secondary shrink-0 flex items-center justify-center text-xs text-muted-foreground">
                         No img

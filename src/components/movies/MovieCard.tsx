@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Star, Clock } from "lucide-react";
 import { Movie } from "@/types";
+import { posterSrc } from "@/lib/api";
 
 const MovieCard = ({ movie }: { movie: Movie }) => (
   <Link
@@ -11,7 +12,7 @@ const MovieCard = ({ movie }: { movie: Movie }) => (
       <figure className="aspect-[2/3] overflow-hidden m-0">
         {movie.poster ? (
           <img
-            src={movie.poster}
+            src={posterSrc(movie.poster)}
             alt={`${movie.title} poster`}
             width={768}
             height={1152}

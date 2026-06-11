@@ -2,7 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { CheckCircle2, Calendar, Clock, MapPin, Ticket, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { bookingsApi } from "@/lib/api";
+import { bookingsApi, posterSrc } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import NotFound from "./NotFound";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
@@ -42,7 +42,7 @@ const ConfirmationContent = () => {
         <section className="grid sm:grid-cols-[140px_1fr]">
           {booking.poster && (
             <img
-              src={booking.poster}
+              src={posterSrc(booking.poster)}
               alt={`${booking.movieTitle} poster`}
               className="h-48 sm:h-full w-full object-cover aspect-[2/3] sm:aspect-auto"
             />
