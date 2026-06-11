@@ -90,6 +90,13 @@ export const authApi = {
   login: (body: { email: string; password: string }) =>
     api.post<import("@/types").AuthResponse>("/auth/login", body),
   me: () => api.get<import("@/types").User>("/auth/me"),
+  forgotPassword: (email: string) =>
+    api.post<{ message: string; resetCode?: string }>(
+      "/auth/forgot-password",
+      { email }
+    ),
+  resetPassword: (body: { email: string; code: string; newPassword: string }) =>
+    api.post<{ message: string }>("/auth/reset-password", body),
 };
 
 export const moviesApi = {

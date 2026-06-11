@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "sonner";
 
 const Login = () => {
@@ -75,10 +76,17 @@ const Login = () => {
               />
             </fieldset>
             <fieldset className="space-y-1">
-              <Label htmlFor="password">Password</Label>
-              <Input
+              <span className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Link
+                  to="/forgot-password"
+                  className="text-xs text-primary font-semibold hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </span>
+              <PasswordInput
                 id="password"
-                type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

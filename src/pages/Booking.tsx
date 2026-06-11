@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ChevronLeft, MapPin, Clock, Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import { AlertTriangle, ChevronLeft, MapPin, Clock, Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { showtimesApi, bookingsApi, ApiError } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,7 @@ const BookingContent = () => {
 
   const bookedSet = new Set(data.bookedSeats);
   const vipRows = new Set(data.vipRows?.length ? data.vipRows : ["A", "B"]);
+  const seatsFull = data.availableSeats.length === 0;
 
   const toggle = (id: string) => {
     if (bookedSet.has(id)) return;
@@ -77,6 +78,14 @@ const BookingContent = () => {
       >
         <ChevronLeft className="h-4 w-4" /> Back to {data.movie.title}
       </Link>
+
+      {seatsFull && (
+        <p className="mt-6 flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive font-semibold">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+          All seats for this showtime are fully booked. Please choose another
+          slot or date.
+        </p>
+      )}
 
       <section className="mt-6 grid lg:grid-cols-[1fr_minmax(280px,360px)] gap-6 lg:gap-8">
         <article className="rounded-2xl border border-border/60 bg-gradient-card p-3 sm:p-6 md:p-10 shadow-card-elegant overflow-x-auto -mx-1 sm:mx-0">
@@ -177,9 +186,13 @@ const BookingContent = () => {
             onClick={confirm}
             size="lg"
             className="mt-5 w-full bg-gradient-primary shadow-glow hover:opacity-90"
-            disabled={bookMutation.isPending}
+            disabled={bookMutation.isPending || seatsFull}
           >
-            {bookMutation.isPending ? "Confirming..." : "Confirm Booking"}
+            {seatsFull
+              ? "Seats Full"
+              : bookMutation.isPending
+                ? "Confirming..."
+                : "Confirm Booking"}
           </Button>
         </aside>
       </section>

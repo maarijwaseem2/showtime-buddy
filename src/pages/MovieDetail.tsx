@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { format, addDays } from "date-fns";
 import { Star, Clock, Calendar as CalendarIcon, MapPin, ChevronLeft, Loader2 } from "lucide-react";
 import { moviesApi, posterSrc } from "@/lib/api";
+import { isSlotExpired } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import NotFound from "./NotFound";
 
@@ -161,45 +162,70 @@ const MovieDetail = () => {
               <Loader2 className="h-4 w-4 animate-spin" /> Loading slots...
             </p>
           ) : slots.length === 0 ? (
-            <p className="mt-8 text-muted-foreground">No available slots for this date.</p>
+            <p className="mt-8 text-muted-foreground">
+              No slots available for this date — please try another date.
+            </p>
           ) : (
-            <ul className="mt-4 grid gap-3 md:grid-cols-2 list-none p-0">
-              {slots.map((s) => {
-                const isFull = s.status === "full";
-                return (
-                  <li
-                    key={s.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-border/60 bg-gradient-card p-4 transition-smooth hover:border-primary/40"
-                  >
-                    <section className="min-w-0">
-                      <p className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xl sm:text-2xl font-bold">{s.time}</span>
-                        {s.status === "available" && (
-                          <span className="text-xs font-semibold text-success">Available</span>
-                        )}
-                        {s.status === "almost-full" && (
-                          <span className="text-xs font-semibold text-gold">Filling fast</span>
-                        )}
-                      </p>
-                      <p className="mt-1 text-sm text-muted-foreground inline-flex items-center gap-1.5">
-                        <MapPin className="h-3.5 w-3.5 shrink-0" />
-                        {s.cinema} · {s.screen}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        From <span className="text-foreground font-semibold">Rs {s.priceStandard}</span>
-                      </p>
-                    </section>
-                    <Button
-                      onClick={() => goBook(s.id)}
-                      disabled={isFull}
-                      className="bg-gradient-primary shadow-glow hover:opacity-90 w-full sm:w-auto"
+            <>
+              {slots.every(
+                (s) => s.status === "full" || isSlotExpired(dateStr, s.time)
+              ) && (
+                <p className="mt-4 rounded-xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive font-semibold">
+                  All slots for this date are sold out or finished — please try
+                  another date.
+                </p>
+              )}
+              <ul className="mt-4 grid gap-3 md:grid-cols-2 list-none p-0">
+                {slots.map((s) => {
+                  const isFull = s.status === "full";
+                  const expired = isSlotExpired(dateStr, s.time);
+                  const unavailable = isFull || expired;
+                  return (
+                    <li
+                      key={s.id}
+                      className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border bg-gradient-card p-4 transition-smooth ${
+                        unavailable
+                          ? "border-border/40 opacity-70"
+                          : "border-border/60 hover:border-primary/40"
+                      }`}
                     >
-                      Book Now
-                    </Button>
-                  </li>
-                );
-              })}
-            </ul>
+                      <section className="min-w-0">
+                        <p className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xl sm:text-2xl font-bold">{s.time}</span>
+                          {expired ? (
+                            <span className="text-xs font-semibold text-muted-foreground">
+                              Time passed
+                            </span>
+                          ) : isFull ? (
+                            <span className="text-xs font-semibold text-destructive">
+                              Sold out
+                            </span>
+                          ) : s.status === "almost-full" ? (
+                            <span className="text-xs font-semibold text-gold">Filling fast</span>
+                          ) : (
+                            <span className="text-xs font-semibold text-success">Available</span>
+                          )}
+                        </p>
+                        <p className="mt-1 text-sm text-muted-foreground inline-flex items-center gap-1.5">
+                          <MapPin className="h-3.5 w-3.5 shrink-0" />
+                          {s.cinema} · {s.screen}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          From <span className="text-foreground font-semibold">Rs {s.priceStandard}</span>
+                        </p>
+                      </section>
+                      <Button
+                        onClick={() => goBook(s.id)}
+                        disabled={unavailable}
+                        className="bg-gradient-primary shadow-glow hover:opacity-90 w-full sm:w-auto"
+                      >
+                        {expired ? "Expired" : isFull ? "Sold Out" : "Book Now"}
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
           )}
         </section>
       )}
