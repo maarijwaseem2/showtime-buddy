@@ -129,9 +129,7 @@ const AdminDashboard = () => {
             Admin portal
           </p>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold">Dashboard</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            {user?.fullName} · {user?.email}
-          </p>
+
         </section>
         <nav className="flex flex-wrap gap-2">
           <Button asChild variant="outline" size="sm">
