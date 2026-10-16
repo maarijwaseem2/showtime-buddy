@@ -2,7 +2,7 @@
 
 ShowSeat is a cinema booking web app: browse what is playing, pick a showtime, and reserve seats on an interactive seat map. Admins manage the catalog, schedules, and bookings from the same app. This repository is the frontend. The API lives in a separate repo and is not renamed here.
 
-[![Live demo](https://img.shields.io/badge/live_demo-ShowSeat-e11d48?style=for-the-badge)](https://maarijwaseem2-showtime-buddy.vercel.app)
+[![Live demo](https://img.shields.io/badge/live_demo-ShowSeat-e11d48?style=for-the-badge)](https://showseat-cinema.vercel.app)
 [![React](https://img.shields.io/badge/React-18-149ECA?style=for-the-badge&logo=react&logoColor=white)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vite.dev)
@@ -10,7 +10,7 @@ ShowSeat is a cinema booking web app: browse what is playing, pick a showtime, a
 
 ## Live demo
 
-**https://maarijwaseem2-showtime-buddy.vercel.app**
+**https://showseat-cinema.vercel.app**
 
 ## Screenshots
 
