@@ -47,7 +47,7 @@ const Signup = () => {
             </span>
             <h1 className="text-2xl font-bold">Create account</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Join CineSlot to book your favorite movies
+              Join ShowSeat to book your favorite movies
             </p>
           </header>
 

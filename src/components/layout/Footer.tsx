@@ -10,7 +10,7 @@ const Footer = () => (
             <Film className="h-4 w-4 text-primary-foreground" />
           </span>
           <span className="text-lg font-bold text-foreground">
-            Cine<span className="text-gradient-primary">Slot</span>
+            Show<span className="text-gradient-primary">Seat</span>
           </span>
         </Link>
         <p className="max-w-xs">Book the best seats at your favorite cinemas in seconds.</p>
@@ -52,7 +52,7 @@ const Footer = () => (
       </section>
     </section>
     <p className="border-t border-border/60 py-4 text-center text-xs text-muted-foreground container">
-      © 2026 CineSlot. All rights reserved.
+      © 2026 ShowSeat. All rights reserved.
     </p>
   </footer>
 );

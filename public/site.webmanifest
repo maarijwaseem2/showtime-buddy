@@ -1,7 +1,7 @@
 {
-  "name": "CineSlot",
-  "short_name": "CineSlot",
-  "description": "Book movie tickets and seats online",
+  "name": "ShowSeat — Real-Time Cinema Seat Booking",
+  "short_name": "ShowSeat",
+  "description": "Real-time cinema seat booking",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0c0c0c",

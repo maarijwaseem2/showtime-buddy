@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CineSlot — Dark cinematic design system. All colors HSL. */
+/* ShowSeat — Dark cinematic design system. All colors HSL. */
 
 @layer base {
   :root {
