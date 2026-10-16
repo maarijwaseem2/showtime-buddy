@@ -43,7 +43,7 @@ const Header = () => {
             <Film className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
           </span>
           <span className="text-base sm:text-xl font-bold tracking-tight truncate">
-            Cine<span className="text-gradient-primary">Slot</span>
+            Show<span className="text-gradient-primary">Seat</span>
           </span>
         </Link>
 
@@ -120,7 +120,7 @@ const Header = () => {
                   <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-primary">
                     <Film className="h-4 w-4 text-primary-foreground" />
                   </span>
-                  CineSlot
+                  ShowSeat
                 </SheetTitle>
               </SheetHeader>
 

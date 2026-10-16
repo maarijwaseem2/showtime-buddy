@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="750" viewBox="0 0 1200 750" role="img" aria-label="Placeholder for the ShowSeat seat map screenshot">
+  <rect width="1200" height="750" rx="24" fill="#141414"/>
+  <rect x="24" y="24" width="1152" height="702" rx="16" fill="#0c0c0c" stroke="#2a2a2a"/>
+  <rect x="180" y="90" width="560" height="10" rx="5" fill="#e11d48"/>
+  <text x="460" y="124" text-anchor="middle" fill="#6b6560" font-family="ui-sans-serif, system-ui, sans-serif" font-size="12" letter-spacing="4">SCREEN</text>
+  <g fill="#2a2a2a">
+    <rect x="210" y="160" width="22" height="22" rx="4"/>
+    <rect x="240" y="160" width="22" height="22" rx="4"/>
+    <rect x="270" y="160" width="22" height="22" rx="4" fill="#e11d48"/>
+    <rect x="300" y="160" width="22" height="22" rx="4"/>
+    <rect x="330" y="160" width="22" height="22" rx="4" fill="#3f3f3f"/>
+    <rect x="360" y="160" width="22" height="22" rx="4"/>
+    <rect x="390" y="160" width="22" height="22" rx="4"/>
+    <rect x="420" y="160" width="22" height="22" rx="4" fill="#f5c451"/>
+    <rect x="450" y="160" width="22" height="22" rx="4"/>
+    <rect x="480" y="160" width="22" height="22" rx="4"/>
+    <rect x="210" y="192" width="22" height="22" rx="4"/>
+    <rect x="240" y="192" width="22" height="22" rx="4" fill="#3f3f3f"/>
+    <rect x="270" y="192" width="22" height="22" rx="4"/>
+    <rect x="300" y="192" width="22" height="22" rx="4"/>
+    <rect x="330" y="192" width="22" height="22" rx="4"/>
+    <rect x="360" y="192" width="22" height="22" rx="4" fill="#e11d48"/>
+    <rect x="390" y="192" width="22" height="22" rx="4"/>
+    <rect x="420" y="192" width="22" height="22" rx="4"/>
+    <rect x="450" y="192" width="22" height="22" rx="4"/>
+    <rect x="480" y="192" width="22" height="22" rx="4" fill="#3f3f3f"/>
+  </g>
+  <rect x="800" y="150" width="280" height="220" rx="12" fill="#1a1a1a" stroke="#2a2a2a"/>
+  <text x="600" y="500" text-anchor="middle" fill="#f5f0e8" font-family="ui-sans-serif, system-ui, sans-serif" font-size="28" font-weight="700">Seat map</text>
+  <text x="600" y="540" text-anchor="middle" fill="#a39e96" font-family="ui-sans-serif, system-ui, sans-serif" font-size="18">Screenshot placeholder · Booking</text>
+  <text x="600" y="572" text-anchor="middle" fill="#6b6560" font-family="ui-sans-serif, system-ui, sans-serif" font-size="14">Replace docs/screenshots/seat-map.svg with a capture of the live seat map.</text>
+</svg>
